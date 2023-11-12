@@ -177,7 +177,7 @@
 	        # No errors will be raised
 		user = mixer.blend('auth.User', username='mike')
 		null = mixer.blend('auth.User', username='mike')
-		
+
 
 2014-01-03  horneds
 

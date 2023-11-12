@@ -1,20 +1,23 @@
-import pytest
 import sys
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 
+import pytest
 
 pytestmark = pytest.mark.skipif(
-    sys.version_info >= (3, 10), reason='pony ORM doesnt support python 3.10')
+    sys.version_info >= (3, 10), reason="pony ORM doesnt support python 3.10"
+)
 
 
 def test_backend():
     from mixer.backend.pony import mixer
+
     assert mixer
 
 
 def test_mixer():
     from pony import orm
+
     from mixer.backend.pony import mixer
 
     db = orm.Database("sqlite", ":memory:", create_db=True)
@@ -69,7 +72,6 @@ def test_mixer():
     db.generate_mapping(create_tables=True)
 
     with orm.db_session:
-
         customer = mixer.blend(Customer)
         assert customer.name
         assert customer.email
@@ -84,8 +86,8 @@ def test_mixer():
         assert orderitem.quantity == 1
         assert orderitem.order
 
-        order = mixer.blend(Order, customer__name='John Snow')
-        assert order.customer.name == 'John Snow'
+        order = mixer.blend(Order, customer__name="John Snow")
+        assert order.customer.name == "John Snow"
 
         with mixer.ctx(commit=True):
             order = mixer.blend(Order)

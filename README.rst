@@ -115,7 +115,7 @@ Quick example:
 
     # Generate SomeModel from SomeApp and force a value of money field from default to random
     some = mixer.blend('someapp.somemodel', money=mixer.RANDOM)
-    
+
     # Generate SomeModel from SomeApp and skip the generation of money field
     some = mixer.blend('someapp.somemodel', money=mixer.SKIP)
 
@@ -148,7 +148,7 @@ Quick example:
 
     # Generate SomeModel from SomeApp and force a value of money field from default to random
     some = mixer.blend('project.models.SomeModel', money=mixer.RANDOM)
-    
+
     # Generate SomeModel from SomeApp and skip the generation of money field
     some = mixer.blend('project.models.SomeModel', money=mixer.SKIP)
 

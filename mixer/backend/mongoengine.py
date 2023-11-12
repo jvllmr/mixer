@@ -20,7 +20,6 @@
     post = mixer.blend(Post, author__username='foo')
 
 """
-from __future__ import absolute_import
 
 import datetime
 import decimal
@@ -50,14 +49,15 @@ from mongoengine import (
 )
 
 from .. import mix_types as t
-from ..main import (
-    SKIP_VALUE, TypeMixer as BaseTypeMixer, GenFactory as BaseFactory,
-    Mixer as BaseMixer, partial, faker
-)
+from ..main import SKIP_VALUE
+from ..main import GenFactory as BaseFactory
+from ..main import Mixer as BaseMixer
+from ..main import TypeMixer as BaseTypeMixer
+from ..main import faker, partial
 
 
 def get_objectid(**kwargs):
-    """ Create a new ObjectId instance.
+    """Create a new ObjectId instance.
 
     :return ObjectId:
 
@@ -66,32 +66,34 @@ def get_objectid(**kwargs):
 
 
 def get_pointfield(**kwargs):
-    """ Get a Point structure.
+    """Get a Point structure.
 
     :return dict:
 
     """
-    return dict(type='Point', coordinates=faker.coordinates())
+    return dict(type="Point", coordinates=faker.coordinates())
 
 
 def get_linestring(length=5, **kwargs):
-    """ Get a LineString structure.
+    """Get a LineString structure.
 
     :return dict:
 
     """
-    return dict(type='LineString', coordinates=[faker.coordinates() for _ in range(length)])
+    return dict(
+        type="LineString", coordinates=[faker.coordinates() for _ in range(length)]
+    )
 
 
 def get_polygon(length=5, **kwargs):
-    """ Get a Poligon structure.
+    """Get a Poligon structure.
 
     :return dict:
 
     """
     lines = []
     for _ in range(length):
-        line = get_linestring()['coordinates']
+        line = get_linestring()["coordinates"]
         if lines:
             line.insert(0, lines[-1][-1])
 
@@ -100,25 +102,32 @@ def get_polygon(length=5, **kwargs):
     if lines:
         lines[0].insert(0, lines[-1][-1])
 
-    return dict(type='Poligon', coordinates=lines)
+    return dict(type="Poligon", coordinates=lines)
 
 
 def get_generic_reference(_typemixer=None, **params):
-    """ Choose a GenericRelation. """
+    """Choose a GenericRelation."""
     meta = type(_typemixer)
-    scheme = faker.random_element([
-        m for (_, m, _, _) in meta.mixers.keys()
-        if issubclass(m, Document) and m is not _typemixer._TypeMixer__scheme # noqa
-    ])
+    scheme = faker.random_element(
+        [
+            m
+            for (_, m, _, _) in meta.mixers.keys()
+            if issubclass(m, Document)
+            and m is not _typemixer._TypeMixer__scheme
+        ]
+    )
 
-    return TypeMixer(scheme, mixer=_typemixer._TypeMixer__mixer,
-                     factory=_typemixer._TypeMixer__factory,
-                     fake=_typemixer._TypeMixer__fake).blend(**params)
+    return TypeMixer(
+        scheme,
+        mixer=_typemixer._TypeMixer__mixer,
+        factory=_typemixer._TypeMixer__factory,
+        fake=_typemixer._TypeMixer__fake,
+    ).blend(**params)
 
 
 class GenFactory(BaseFactory):
 
-    """ Map a mongoengine classes to simple types. """
+    """Map a mongoengine classes to simple types."""
 
     types = {
         BooleanField: bool,
@@ -144,12 +153,12 @@ class GenFactory(BaseFactory):
 
 class TypeMixer(BaseTypeMixer):
 
-    """ TypeMixer for Mongoengine. """
+    """TypeMixer for Mongoengine."""
 
     factory = GenFactory
 
-    def make_fabric(self, me_field, field_name=None, fake=None, kwargs=None): # noqa
-        """ Make a fabric for field.
+    def make_fabric(self, me_field, field_name=None, fake=None, kwargs=None):  # noqa
+        """Make a fabric for field.
 
         :param me_field: Mongoengine field's instance
         :param field_name: Field name
@@ -170,9 +179,10 @@ class TypeMixer(BaseTypeMixer):
             return partial(faker.random_element, choices)
 
         if ftype is StringField:
-            fab = super(TypeMixer, self).make_fabric(
-                ftype, field_name=field_name, fake=fake, kwargs=kwargs)
-            return lambda: fab()[:me_field.max_length]
+            fab = super().make_fabric(
+                ftype, field_name=field_name, fake=fake, kwargs=kwargs
+            )
+            return lambda: fab()[: me_field.max_length]
 
         if ftype in (ListField, EmbeddedDocumentListField):
             fab = self.make_fabric(me_field.field, kwargs=kwargs)
@@ -182,19 +192,20 @@ class TypeMixer(BaseTypeMixer):
             ftype = me_field.document_type
 
         elif ftype is GenericReferenceField:
-            kwargs.update({'_typemixer': self})
+            kwargs.update({"_typemixer": self})
 
         elif ftype is DecimalField:
-            kwargs['right_digits'] = me_field.precision
-            kwargs['min_value'] = me_field.min_value
-            kwargs['max_value'] = me_field.max_value
+            kwargs["right_digits"] = me_field.precision
+            kwargs["min_value"] = me_field.min_value
+            kwargs["max_value"] = me_field.max_value
 
-        return super(TypeMixer, self).make_fabric(
-            ftype, field_name=field_name, fake=fake, kwargs=kwargs)
+        return super().make_fabric(
+            ftype, field_name=field_name, fake=fake, kwargs=kwargs
+        )
 
     @staticmethod
     def get_default(field):
-        """ Get default value from field.
+        """Get default value from field.
 
         :return value: A default value or NO_VALUE
 
@@ -210,7 +221,7 @@ class TypeMixer(BaseTypeMixer):
 
     @staticmethod
     def is_unique(field):
-        """ Return True is field's value should be a unique.
+        """Return True is field's value should be a unique.
 
         :return bool:
 
@@ -219,7 +230,7 @@ class TypeMixer(BaseTypeMixer):
 
     @staticmethod
     def is_required(field):
-        """ Return True is field's value should be defined.
+        """Return True is field's value should be defined.
 
         :return bool:
 
@@ -230,15 +241,18 @@ class TypeMixer(BaseTypeMixer):
         return field.scheme.required or isinstance(field.scheme, ObjectIdField)
 
     def gen_select(self, field_name, select):
-        """ Select related document from mongo. """
+        """Select related document from mongo."""
         field = self.__fields.get(field_name)
         if not field:
-            return super(TypeMixer, self).gen_select(field_name, select)
+            return super().gen_select(field_name, select)
 
-        return field.name, field.scheme.document_type.objects.filter(**select.params).first()
+        return (
+            field.name,
+            field.scheme.document_type.objects.filter(**select.params).first(),
+        )
 
     def guard(self, *args, **kwargs):
-        """ Ensure for an objects are exist in DB. """
+        """Ensure for an objects are exist in DB."""
         qs = self.__scheme.objects(*args, **kwargs)
         count = len(qs)
         if count == 1:
@@ -246,18 +260,17 @@ class TypeMixer(BaseTypeMixer):
         return qs
 
     def reload(self, obj):
-        """ Reload object from storage. """
+        """Reload object from storage."""
         return self.__scheme.get(id=obj.id)
 
     def __load_fields(self):
         for fname, field in self.__scheme._fields.items():
-
             yield fname, t.Field(field, fname)
 
 
 class Mixer(BaseMixer):
 
-    """ Mixer class for mongoengine.
+    """Mixer class for mongoengine.
 
     Default mixer (desnt save a generated instances to db)
     ::
@@ -278,22 +291,22 @@ class Mixer(BaseMixer):
     type_mixer_cls = TypeMixer
 
     def __init__(self, commit=True, **params):
-        """ Initialize the Mongoengine Mixer.
+        """Initialize the Mongoengine Mixer.
 
         :param fake: (True) Generate fake data instead of random data.
         :param commit: (True) Save object to Mongo DB.
 
         """
-        super(Mixer, self).__init__(**params)
-        self.params['commit'] = commit
+        super().__init__(**params)
+        self.params["commit"] = commit
 
     def postprocess(self, target):
-        """ Save instance to DB.
+        """Save instance to DB.
 
         :return instance:
 
         """
-        if self.params.get('commit') and isinstance(target, Document):
+        if self.params.get("commit") and isinstance(target, Document):
             target.save()
 
         return target

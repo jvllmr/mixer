@@ -1,5 +1,4 @@
 """ Django support. """
-from __future__ import absolute_import
 
 import datetime as dt
 import decimal
@@ -8,31 +7,37 @@ from types import GeneratorType
 
 from django.apps import apps
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation   # noqa
+from django.contrib.contenttypes.fields import (
+    GenericForeignKey,
+    GenericRelation,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
 from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from django.db import models
 
-from .. import mix_types as t, _compat as _
-from ..main import (
-    SKIP_VALUE, TypeMixerMeta as BaseTypeMixerMeta, TypeMixer as BaseTypeMixer,
-    GenFactory as BaseFactory, Mixer as BaseMixer, partial, faker)
-
+from .. import _compat as _
+from .. import mix_types as t
+from ..main import SKIP_VALUE
+from ..main import GenFactory as BaseFactory
+from ..main import Mixer as BaseMixer
+from ..main import TypeMixer as BaseTypeMixer
+from ..main import TypeMixerMeta as BaseTypeMixerMeta
+from ..main import faker, partial
 
 get_contentfile = ContentFile
 
-MOCK_FILE = path.abspath(path.join(
-    path.dirname(path.dirname(__file__)), 'resources', 'file.txt'
-))
-MOCK_IMAGE = path.abspath(path.join(
-    path.dirname(path.dirname(__file__)), 'resources', 'image.gif'
-))
+MOCK_FILE = path.abspath(
+    path.join(path.dirname(path.dirname(__file__)), "resources", "file.txt")
+)
+MOCK_IMAGE = path.abspath(
+    path.join(path.dirname(path.dirname(__file__)), "resources", "image.gif")
+)
 
 
 class UTCZone(dt.tzinfo):
 
-    """ Implement UTC timezone. """
+    """Implement UTC timezone."""
 
     utcoffset = dst = lambda s, d: dt.timedelta(0)
     tzname = lambda s, d: "UTC"
@@ -42,18 +47,18 @@ UTC = UTCZone()
 
 
 def get_file(filepath=MOCK_FILE, **kwargs):
-    """ Generate a content file.
+    """Generate a content file.
 
     :return ContentFile:
 
     """
-    with open(filepath, 'rb') as f:
+    with open(filepath, "rb") as f:
         name = path.basename(filepath)
         return get_contentfile(f.read(), name)
 
 
 def get_image(filepath=MOCK_IMAGE):
-    """ Generate a content image.
+    """Generate a content image.
 
     :return ContentFile:
 
@@ -62,26 +67,29 @@ def get_image(filepath=MOCK_IMAGE):
 
 
 def get_relation(_scheme=None, _typemixer=None, **params):
-    """ Function description. """
+    """Function description."""
     scheme = _scheme.related_model
 
     if scheme is ContentType:
         choices = [m for m in apps.get_models() if m is not ContentType]
         return ContentType.objects.get_for_model(faker.random_element(choices))
 
-    return TypeMixer(scheme, mixer=_typemixer._TypeMixer__mixer,
-                     factory=_typemixer._TypeMixer__factory,
-                     fake=_typemixer._TypeMixer__fake,).blend(**params)
+    return TypeMixer(
+        scheme,
+        mixer=_typemixer._TypeMixer__mixer,
+        factory=_typemixer._TypeMixer__factory,
+        fake=_typemixer._TypeMixer__fake,
+    ).blend(**params)
 
 
 def get_datetime(**params):
-    """ Support Django TZ support. """
+    """Support Django TZ support."""
     return faker.date_time(tzinfo=UTC if settings.USE_TZ else None)
 
 
 class GenFactory(BaseFactory):
 
-    """ Map a django classes to simple types. """
+    """Map a django classes to simple types."""
 
     types = {
         (models.AutoField, models.PositiveIntegerField): t.PositiveInteger,
@@ -117,30 +125,28 @@ class GenFactory(BaseFactory):
 
 class TypeMixerMeta(BaseTypeMixerMeta):
 
-    """ Load django models from strings. """
+    """Load django models from strings."""
 
     def __new__(mcs, name, bases, params):
-        """ Associate Scheme with Django models.
+        """Associate Scheme with Django models.
 
         Cache Django models.
 
         :return mixer.backend.django.TypeMixer: A generated class.
 
         """
-        params['models_cache'] = dict()
-        cls = super(TypeMixerMeta, mcs).__new__(mcs, name, bases, params)
+        params["models_cache"] = dict()
+        cls = super().__new__(mcs, name, bases, params)
         return cls
 
     def __load_cls(cls, cls_type):
-
         if isinstance(cls_type, _.string_types):
-            if '.' in cls_type:
+            if "." in cls_type:
                 app_label, model_name = cls_type.split(".")
                 return apps.get_model(app_label, model_name)
 
             else:
                 try:
-
                     if cls_type not in cls.models_cache:
                         cls.__update_cache()
 
@@ -152,7 +158,7 @@ class TypeMixerMeta(BaseTypeMixerMeta):
         return cls_type
 
     def __update_cache(cls):
-        """ Update apps cache for Django < 1.7. """
+        """Update apps cache for Django < 1.7."""
         for app in apps.all_models:
             for name, model in apps.all_models[app].items():
                 cls.models_cache[name] = model
@@ -160,14 +166,14 @@ class TypeMixerMeta(BaseTypeMixerMeta):
 
 class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
 
-    """ TypeMixer for Django. """
+    """TypeMixer for Django."""
 
     __metaclass__ = TypeMixerMeta
 
     factory = GenFactory
 
     def postprocess(self, target, postprocess_values):
-        """ Fill postprocess_values. """
+        """Fill postprocess_values."""
         for name, deffered in postprocess_values:
             if not isinstance(deffered.scheme, GenericForeignKey):
                 continue
@@ -179,7 +185,6 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
             target = self.__mixer.postprocess(target)
 
         for name, deffered in postprocess_values:
-
             if isinstance(deffered.scheme, GenericForeignKey) or not target.pk:
                 continue
 
@@ -192,11 +197,14 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
             # # the add and remove methods do not exist.
             through = deffered.scheme.remote_field.through
 
-            if not through._meta.auto_created and self.__mixer: # noqa
+            if not through._meta.auto_created and self.__mixer:
                 self.__mixer.blend(
-                    through, **{
+                    through,
+                    **{
                         deffered.scheme.m2m_field_name(): target,
-                        deffered.scheme.m2m_reverse_field_name(): value})
+                        deffered.scheme.m2m_reverse_field_name(): value,
+                    },
+                )
                 continue
 
             if not isinstance(value, (list, tuple)):
@@ -207,29 +215,27 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
         return target
 
     def get_value(self, name, value):
-        """ Set value to generated instance.
+        """Set value to generated instance.
 
         :return : None or (name, value) for later use
 
         """
         field = self.__fields.get(name)
         if field:
-
-            if (field.scheme in self.__scheme._meta.local_many_to_many or
-                    isinstance(field.scheme, GenericForeignKey)):
+            if field.scheme in self.__scheme._meta.local_many_to_many or isinstance(
+                field.scheme, GenericForeignKey
+            ):
                 return name, t._Deffered(value, field.scheme)
 
             return self._get_value(name, value, field)
 
-        return super(TypeMixer, self).get_value(name, value)
+        return super().get_value(name, value)
 
     def _get_value(self, name, value, field=None):
-
         if isinstance(value, GeneratorType):
             return self._get_value(name, next(value), field)
 
         if not isinstance(value, t.Mix) and value is not SKIP_VALUE:
-
             if callable(value):
                 return self._get_value(name, value(), field)
 
@@ -239,7 +245,7 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
         return name, value
 
     def gen_select(self, field_name, select):
-        """ Select exists value from database.
+        """Select exists value from database.
 
         :param field_name: Name of field for generation.
 
@@ -251,14 +257,18 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
 
         try:
             field = self.__fields[field_name]
-            return field.name, field.scheme.remote_field.model.objects.filter(**select.params).\
-                order_by('?')[0]
+            return (
+                field.name,
+                field.scheme.remote_field.model.objects.filter(
+                    **select.params
+                ).order_by("?")[0],
+            )
 
         except Exception:
-            raise Exception("Cannot find a value for the field: '{0}'".format(field_name))
+            raise Exception(f"Cannot find a value for the field: '{field_name}'")
 
     def gen_field(self, field):
-        """ Generate value by field.
+        """Generate value by field.
 
         :param relation: Instance of :class:`Field`
 
@@ -269,12 +279,12 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
             return field.name, SKIP_VALUE
 
         if field.params and not field.scheme:
-            raise ValueError('Invalid relation %s' % field.name)
+            raise ValueError("Invalid relation %s" % field.name)
 
-        return super(TypeMixer, self).gen_field(field)
+        return super().gen_field(field)
 
-    def make_fabric(self, field, fname=None, fake=False, kwargs=None): # noqa
-        """ Make a fabric for field.
+    def make_fabric(self, field, fname=None, fake=False, kwargs=None):
+        """Make a fabric for field.
 
         :param field: A mixer field
         :param fname: Field name
@@ -290,7 +300,8 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
 
         if fcls is models.CommaSeparatedIntegerField:
             return partial(
-                faker.random_sample, range(0, field.max_length), length=field.max_length)
+                faker.random_sample, range(0, field.max_length), length=field.max_length
+            )
 
         if field and field.choices:
             try:
@@ -300,39 +311,36 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
                 pass
 
         if stype in (str, t.Text):
-            fab = super(TypeMixer, self).make_fabric(
-                fcls, field_name=fname, fake=fake, kwargs=kwargs)
-            return lambda: fab()[:field.max_length]
+            fab = super().make_fabric(fcls, field_name=fname, fake=fake, kwargs=kwargs)
+            return lambda: fab()[: field.max_length]
 
         if stype is decimal.Decimal:
-            kwargs['left_digits'] = field.max_digits - field.decimal_places
-            kwargs['right_digits'] = field.decimal_places
+            kwargs["left_digits"] = field.max_digits - field.decimal_places
+            kwargs["right_digits"] = field.decimal_places
 
         elif stype is t.IPString:
-
             # Hack for support Django 1.4/1.5
-            protocol = getattr(field, 'protocol', None)
+            protocol = getattr(field, "protocol", None)
             if not protocol:
                 validator = field.default_validators[0]
-                protocol = 'both'
+                protocol = "both"
                 if validator is validate_ipv4_address:
-                    protocol = 'ipv4'
+                    protocol = "ipv4"
                 elif validator is validate_ipv6_address:
-                    protocol = 'ipv6'
+                    protocol = "ipv6"
 
             # protocol matching is case insensitive
             # default address is either IPv4 or IPv6
-            kwargs['protocol'] = protocol.lower()
+            kwargs["protocol"] = protocol.lower()
 
         elif isinstance(field, models.fields.related.RelatedField):
-            kwargs.update({'_typemixer': self, '_scheme': field})
+            kwargs.update({"_typemixer": self, "_scheme": field})
 
-        return super(TypeMixer, self).make_fabric(
-            fcls, field_name=fname, fake=fake, kwargs=kwargs)
+        return super().make_fabric(fcls, field_name=fname, fake=fake, kwargs=kwargs)
 
     @staticmethod
     def is_unique(field):
-        """ Return True is field's value should be a unique.
+        """Return True is field's value should be a unique.
 
         :return bool:
 
@@ -341,7 +349,7 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
 
     @staticmethod
     def is_required(field):
-        """ Return True is field's value should be defined.
+        """Return True is field's value should be defined.
 
         :return bool:
 
@@ -364,7 +372,7 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
         return True
 
     def guard(self, *args, **kwargs):
-        """ Look objects in database.
+        """Look objects in database.
 
         :returns: A finded object or False
 
@@ -381,21 +389,23 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
         return False
 
     def reload(self, obj):
-        """ Reload object from database. """
+        """Reload object from database."""
         if not obj.pk:
             raise ValueError("Cannot load the object: %s" % obj)
         return self.__scheme._default_manager.get(pk=obj.pk)
 
     def __load_fields(self):
-        private_fields = getattr(self.__scheme._meta, 'private_fields', [])
+        private_fields = getattr(self.__scheme._meta, "private_fields", [])
 
         for field in private_fields:
             yield field.name, t.Field(field, field.name)
 
         for field in self.__scheme._meta.fields:
-
-            if isinstance(field, models.AutoField)\
-                    and self.__mixer and self.__mixer.params.get('commit'):
+            if (
+                isinstance(field, models.AutoField)
+                and self.__mixer
+                and self.__mixer.params.get("commit")
+            ):
                 continue
 
             yield field.name, t.Field(field, field.name)
@@ -406,7 +416,7 @@ class TypeMixer(_.with_metaclass(TypeMixerMeta, BaseTypeMixer)):
 
 class Mixer(BaseMixer):
 
-    """ Integration with Django. """
+    """Integration with Django."""
 
     type_mixer_cls = TypeMixer
 
@@ -416,16 +426,16 @@ class Mixer(BaseMixer):
         :param commit: (True) Save object to database.
 
         """
-        super(Mixer, self).__init__(**params)
-        self.params['commit'] = commit
+        super().__init__(**params)
+        self.params["commit"] = commit
 
     def postprocess(self, target):
-        """ Save objects in db.
+        """Save objects in db.
 
         :return value: A generated value
 
         """
-        if self.params.get('commit'):
+        if self.params.get("commit"):
             target.save()
 
         return target

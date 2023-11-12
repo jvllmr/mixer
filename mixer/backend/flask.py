@@ -11,14 +11,14 @@ See example: ::
 """
 from __future__ import annotations
 
-from .sqlalchemy import TypeMixer, Mixer as BaseMixer
-
 import typing
 
+from .sqlalchemy import Mixer as BaseMixer
+from .sqlalchemy import TypeMixer
 
 if typing.TYPE_CHECKING:
-    from flask_sqlalchemy import SQLAlchemy
     from flask import Flask
+    from flask_sqlalchemy import SQLAlchemy
 
 
 class Mixer(BaseMixer):
@@ -35,7 +35,7 @@ class Mixer(BaseMixer):
         :param commit: (True) Commit instance to session after creation.
 
         """
-        super(Mixer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.params["commit"] = commit
         if app:
             self.init_app(app)

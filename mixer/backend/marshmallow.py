@@ -6,18 +6,19 @@
 
 
 """
-from __future__ import absolute_import
 
 import datetime as dt
 import decimal
 import typing
 
-from marshmallow import fields, validate, missing, ValidationError
+from marshmallow import ValidationError, fields, missing, validate
 
 from .. import mix_types as t
-from ..main import (
-    TypeMixer as BaseTypeMixer, Mixer as BaseMixer, GenFactory as BaseFactory,
-    LOGGER, faker, partial, SKIP_VALUE)
+from ..main import LOGGER, SKIP_VALUE
+from ..main import GenFactory as BaseFactory
+from ..main import Mixer as BaseMixer
+from ..main import TypeMixer as BaseTypeMixer
+from ..main import faker, partial
 
 
 def get_nested(_scheme=None, _typemixer=None, _many=False, **kwargs):
@@ -68,7 +69,7 @@ class GenFactory(BaseFactory):
 
 class TypeMixer(BaseTypeMixer):
 
-    """ TypeMixer for Marshmallow. """
+    """TypeMixer for Marshmallow."""
 
     factory = GenFactory
 
@@ -78,61 +79,70 @@ class TypeMixer(BaseTypeMixer):
             yield name, t.Field(field, name)
 
     def is_required(self, field):
-        """ Return True is field's value should be defined.
+        """Return True is field's value should be defined.
 
         :return bool:
 
         """
         return field.scheme.required or (
-            self.__mixer.params['required'] and not field.scheme.dump_only)
+            self.__mixer.params["required"] and not field.scheme.dump_only
+        )
 
     @staticmethod
     def get_default(field):
-        """ Get default value from field.
+        """Get default value from field.
 
         :return value:
 
         """
-        return field.scheme.dump_default is missing and SKIP_VALUE or field.scheme.dump_default # noqa
+        return (
+            field.scheme.dump_default is missing
+            and SKIP_VALUE
+            or field.scheme.dump_default
+        )
 
     def populate_target(self, values):
-        """ Populate target. """
+        """Populate target."""
         try:
             return self.__scheme().load(dict(values))
         except ValidationError as exc:
             LOGGER.error("Mixer-marshmallow: %r", exc.messages)
             return
 
-    def make_fabric(self, field, field_name=None, fake=False, kwargs=None): # noqa
+    def make_fabric(self, field, field_name=None, fake=False, kwargs=None):  # noqa
         kwargs = {} if kwargs is None else kwargs
 
         if isinstance(field, fields.Nested):
-            kwargs.update({'_typemixer': self, '_scheme': type(field.schema), '_many': field.many})
+            kwargs.update(
+                {"_typemixer": self, "_scheme": type(field.schema), "_many": field.many}
+            )
 
         if isinstance(field, fields.List):
             fab = self.make_fabric(
-                field.inner, field_name=field_name, fake=fake, kwargs=kwargs)
+                field.inner, field_name=field_name, fake=fake, kwargs=kwargs
+            )
             return lambda: [fab() for _ in range(faker.small_positive_integer(4))]
 
         for validator in field.validators:
             if isinstance(validator, validate.OneOf):
                 return partial(faker.random_element, validator.choices)
 
-        return super(TypeMixer, self).make_fabric(
-            type(field), field_name=field_name, fake=fake, kwargs=kwargs)
+        return super().make_fabric(
+            type(field), field_name=field_name, fake=fake, kwargs=kwargs
+        )
 
 
 class Mixer(BaseMixer):
 
-    """ Integration with Marshmallow. """
+    """Integration with Marshmallow."""
 
     type_mixer_cls = TypeMixer
 
     def __init__(self, *args, **kwargs):
-        super(Mixer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # All fields is required by default
-        self.params.setdefault('required', True)
+        self.params.setdefault("required", True)
 
 
 mixer = Mixer()

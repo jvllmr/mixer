@@ -3,13 +3,14 @@ import datetime as dt
 import pytest
 from peewee import *
 
-
-db = SqliteDatabase(':memory:')
+db = SqliteDatabase(":memory:")
 
 
 class Person(Model):
     name = CharField()
-    status = CharField(choices=(('user', 'user'), ('moderator', 'moderator'), ('admin', 'admin')))
+    status = CharField(
+        choices=(("user", "user"), ("moderator", "moderator"), ("admin", "admin"))
+    )
     created = DateTimeField(default=dt.datetime.now)
     birthday = DateField()
     is_relative = BooleanField()
@@ -19,7 +20,7 @@ class Person(Model):
 
 
 class Pet(Model):
-    owner = ForeignKeyField(Person, backref='pets')
+    owner = ForeignKeyField(Person, backref="pets")
     name = CharField()
     animal_type = CharField()
 
@@ -34,6 +35,7 @@ Pet.create_table()
 @pytest.fixture
 def mixer():
     from mixer.backend.peewee import mixer
+
     return mixer
 
 
@@ -48,7 +50,7 @@ def test_mixer(mixer):
     assert person.name
     assert person.id
     assert person.birthday
-    assert person.status in ('user', 'moderator', 'admin')
+    assert person.status in ("user", "moderator", "admin")
 
     pet = mixer.blend(Pet)
     assert pet.name
@@ -67,11 +69,11 @@ def test_guard(mixer):
 
 
 def test_reload(mixer):
-    person = mixer.blend(Person, name='true')
-    person.name = 'wrong'
+    person = mixer.blend(Person, name="true")
+    person.name = "wrong"
 
     person = mixer.reload(person)
-    assert person.name == 'true'
+    assert person.name == "true"
 
 
 def test_select(mixer):

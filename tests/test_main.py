@@ -1,15 +1,14 @@
 """ Test mixer base functionality. """
 from __future__ import annotations
-import datetime
 
-import pytest
+import datetime
 from decimal import Decimal
 
+import pytest
+
+from mixer.backend.annotated import Mixer as AnnotationMixer
+from mixer.backend.annotated import TypeMixer as AnnotationTypeMixer
 from mixer.main import Mixer, TypeMixer
-from mixer.backend.annotated import (
-    Mixer as AnnotationMixer,
-    TypeMixer as AnnotationTypeMixer,
-)
 
 
 class Test:
@@ -84,7 +83,6 @@ def test_typemixer_meta(typemixer_cls, scheme):
     "mixer", [TypeMixer(Scheme), AnnotationTypeMixer(AnnotationScheme)]
 )
 def test_typemixer(mixer):
-
     test = mixer.blend(prop__two=2, prop__one=1, prop__name="sigil", name="RJ")
     assert test.male in (True, False)
     assert test.name == "RJ"
@@ -100,7 +98,6 @@ def test_typemixer(mixer):
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]
 )
 def test_fake(mixer, scheme):
-
     test = mixer.blend(scheme, name=mixer.FAKE, title=mixer.FAKE)
     assert " " in test.name
     assert " " in test.title
@@ -143,7 +140,6 @@ def test_mix():
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]
 )
 def test_mixer(mixer, scheme):
-
     assert Mixer.SKIP == mixer.SKIP
     try:
         Mixer.SKIP = 111
@@ -156,7 +152,7 @@ def test_mixer(mixer, scheme):
     except AttributeError:
         pass
 
-    gen = ("test{0}".format(i) for i in range(500))
+    gen = (f"test{i}" for i in range(500))
     test = mixer.blend(f"tests.test_main.{scheme.__name__}", name=gen)
     assert test.name == "test0"
 
@@ -203,21 +199,18 @@ def test_mixer_cycle(mixer, scheme):
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]
 )
 def test_mixer_default(mixer, scheme):
-
     test = mixer.blend(scheme)
     assert test.name
 
 
 @pytest.mark.parametrize("mixer", [Mixer(), AnnotationMixer()])
 def test_invalid_scheme(mixer):
-
     with pytest.raises(ValueError):
         mixer.blend("tests.test_main.Unknown")
 
 
 @pytest.mark.parametrize("mixer", [Mixer(), AnnotationMixer()])
 def test_sequence(mixer):
-
     gen = mixer.sequence()
     assert next(gen) == 0
     assert next(gen) == 1
@@ -241,8 +234,9 @@ def test_sequence(mixer):
 )
 def test_custom(mixer_cls, scheme):
     mixer = mixer_cls()
+
     @mixer.middleware(scheme)
-    def postprocess(x):  # noqa
+    def postprocess(x):
         x.name += " Done"
         return x
 
@@ -267,13 +261,13 @@ def test_custom(mixer_cls, scheme):
     test = mixer.blend(scheme)
     assert test.name == "Always same"
 
+
 @pytest.mark.parametrize(
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]
 )
-def test_ctx(mixer,scheme):
+def test_ctx(mixer, scheme):
     from mixer.main import LOGGER
 
-    
     level = LOGGER.level
 
     with mixer.ctx(loglevel="INFO"):
@@ -289,9 +283,8 @@ def test_ctx(mixer,scheme):
 
     assert LOGGER.level == level
 
-@pytest.mark.parametrize(
-    "mixer", [Mixer(), AnnotationMixer()]
-)
+
+@pytest.mark.parametrize("mixer", [Mixer(), AnnotationMixer()])
 def test_locale(mixer):
     mixer.faker.locale = "ru"
 
@@ -305,17 +298,16 @@ def test_locale(mixer):
 
     assert mixer.faker.locale == "ru_RU"
 
+
 @pytest.mark.parametrize(
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]
 )
 def test_silence(mixer, scheme):
-    
-
     class CustomException(Exception):
         pass
 
     @mixer.middleware(scheme)
-    def falsed(test):  # noqa
+    def falsed(test):
         raise CustomException("Unhandled")
 
     with pytest.raises(CustomException):
@@ -326,6 +318,7 @@ def test_silence(mixer, scheme):
 
     mixer.unregister_middleware(scheme, falsed)
     mixer.blend(scheme)  # does not raise any exceptions
+
 
 @pytest.mark.parametrize(
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]
@@ -340,6 +333,7 @@ def test_skip():
     test = mixer.blend(Test, one=mixer.SKIP)
     assert test.one is not mixer.SKIP
     assert test.one is int
+
 
 @pytest.mark.parametrize(
     "mixer, scheme", [(Mixer(), Test), (AnnotationMixer(), AnnotationTest)]

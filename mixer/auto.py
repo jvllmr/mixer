@@ -1,12 +1,12 @@
 """ Automatic backend selection. """
 
-from .main import ProxyMixer
 from . import _compat as _
+from .main import ProxyMixer
 
 
-class MixerProxy(object):
+class MixerProxy:
 
-    """ Load mixer for class automaticly.
+    """Load mixer for class automaticly.
 
     ::
 
@@ -22,7 +22,7 @@ class MixerProxy(object):
 
     @classmethod
     def cycle(cls, count=5):
-        """ Generate a lot instances.
+        """Generate a lot instances.
 
         :return MetaMixer:
 
@@ -31,7 +31,7 @@ class MixerProxy(object):
 
     @classmethod
     def blend(cls, model, **params):
-        """ Get a mixer class for model.
+        """Get a mixer class for model.
 
         :return instance:
 
@@ -40,7 +40,6 @@ class MixerProxy(object):
         backend = cls.__store__.get(scheme)
 
         if not backend:
-
             if cls.__is_django_model(scheme):
                 from .backend.django import mixer as backend
 
@@ -57,7 +56,7 @@ class MixerProxy(object):
     @staticmethod
     def __load_cls(cls_type):
         if isinstance(cls_type, _.string_types):
-            mod, cls_type = cls_type.rsplit('.', 1)
+            mod, cls_type = cls_type.rsplit(".", 1)
             mod = _.import_module(mod)
             cls_type = getattr(mod, cls_type)
         return cls_type
@@ -66,18 +65,20 @@ class MixerProxy(object):
     def __is_django_model(model):
         try:
             from django.db.models import Model
+
             return issubclass(model, Model)
         except ImportError:
             return False
 
     @staticmethod
     def __is_sqlalchemy_model(model):
-        return bool(getattr(model, '__mapper__', False))
+        return bool(getattr(model, "__mapper__", False))
 
     @staticmethod
     def __is_mongoengine_model(model):
         try:
             from mongoengine.base.document import BaseDocument
+
             return issubclass(model, BaseDocument)
         except ImportError:
             return False

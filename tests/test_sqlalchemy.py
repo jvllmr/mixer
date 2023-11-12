@@ -15,8 +15,7 @@ from sqlalchemy import (
     types,
 )
 from sqlalchemy.dialects import mssql, mysql, oracle, postgresql, sqlite
-
-from sqlalchemy.orm import relationship, scoped_session, sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, relationship, scoped_session, sessionmaker
 
 ENGINE = create_engine("sqlite:///:memory:")
 BASE = declarative_base()

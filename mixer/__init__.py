@@ -9,7 +9,6 @@ Mixer is very useful for testing and fixtures replacement.
 :license: BSD, see LICENSE for more details.
 
 """
-from __future__ import unicode_literals
 
 # Module information
 # ==================

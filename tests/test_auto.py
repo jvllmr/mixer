@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-
-
 def test_main():
     from mixer.auto import mixer
 
@@ -9,32 +6,34 @@ def test_main():
 
 def test_django():
     from django.core.management import call_command
+
     from mixer.auto import mixer
 
     from .django_app.models import Rabbit
 
-    call_command('migrate', interactive=False)
+    call_command("migrate", interactive=False)
 
     rabbit = mixer.blend(Rabbit)
     assert rabbit
 
-    rabbit = mixer.blend('tests.django_app.models.Rabbit')
+    rabbit = mixer.blend("tests.django_app.models.Rabbit")
     assert rabbit
 
     rabbits = mixer.cycle(2).blend(Rabbit)
     assert all(rabbits)
 
-    call_command('flush', interactive=False)
+    call_command("flush", interactive=False)
 
 
 def test_sqlalchemy():
     from mixer.auto import mixer
+
     from .test_sqlalchemy import User
 
     user = mixer.blend(User)
     assert user
 
-    user = mixer.blend('tests.test_sqlalchemy.User')
+    user = mixer.blend("tests.test_sqlalchemy.User")
     assert user
 
     users = mixer.cycle(2).blend(User)
@@ -43,7 +42,8 @@ def test_sqlalchemy():
 
 def test_mongoengine():
     from mixer.backend.mongoengine import mixer as m
-    m.params['commit'] = False
+
+    m.params["commit"] = False
 
     from mixer.auto import mixer
 
@@ -52,7 +52,7 @@ def test_mongoengine():
     user = mixer.blend(User)
     assert user
 
-    user = mixer.blend('tests.test_mongoengine.User')
+    user = mixer.blend("tests.test_mongoengine.User")
     assert user
 
     users = mixer.cycle(2).blend(User)

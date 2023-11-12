@@ -1,16 +1,15 @@
 """ SQLAlchemy support. """
-from __future__ import absolute_import
 
 import datetime
+import decimal
 from types import GeneratorType
 
-import decimal
 from sqlalchemy import func
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 # from sqlalchemy.orm.interfaces import MANYTOONE
 from sqlalchemy.orm.collections import InstrumentedList
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql import expression
 from sqlalchemy.sql.type_api import TypeDecorator
 
@@ -18,50 +17,47 @@ try:
     from sqlalchemy.orm.relationships import RelationshipProperty
 except ImportError:
     from sqlalchemy.orm.properties import RelationshipProperty
+
+from sqlalchemy import func as sa_func
 from sqlalchemy.types import (
     BIGINT,
     BOOLEAN,
-    BigInteger,
-    Boolean,
     CHAR,
     DATE,
     DATETIME,
     DECIMAL,
-    Date,
-    DateTime,
     FLOAT,
-    Float,
     INT,
     INTEGER,
-    Integer,
     NCHAR,
-    NVARCHAR,
     NUMERIC,
-    Numeric,
+    NVARCHAR,
     SMALLINT,
-    SmallInteger,
-    String,
     TEXT,
     TIME,
+    VARCHAR,
+    BigInteger,
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    Numeric,
+    SmallInteger,
+    String,
     Text,
     Time,
     Unicode,
     UnicodeText,
-    VARCHAR,
-    Enum,
 )
 
 from .. import mix_types as t
-from ..main import (
-    SKIP_VALUE,
-    LOGGER,
-    TypeMixer as BaseTypeMixer,
-    GenFactory as BaseFactory,
-    Mixer as BaseMixer,
-    partial,
-    faker,
-)
-from sqlalchemy import func as sa_func
+from ..main import LOGGER, SKIP_VALUE
+from ..main import GenFactory as BaseFactory
+from ..main import Mixer as BaseMixer
+from ..main import TypeMixer as BaseTypeMixer
+from ..main import faker, partial
 
 
 class GenFactory(BaseFactory):
@@ -93,7 +89,7 @@ class TypeMixer(BaseTypeMixer):
 
     def __init__(self, cls, **params):
         """Init TypeMixer and save the mapper."""
-        super(TypeMixer, self).__init__(cls, **params)
+        super().__init__(cls, **params)
         self.mapper = self.__scheme._sa_class_manager.mapper
 
     def postprocess(self, target, postprocess_values):
@@ -216,7 +212,7 @@ class TypeMixer(BaseTypeMixer):
         if field and isinstance(field.scheme, RelationshipProperty):
             return field_name, t._Deffered(field_value, field.scheme)
 
-        return super(TypeMixer, self).get_value(field_name, field_value)
+        return super().get_value(field_name, field_value)
 
     def make_fabric(self, column, field_name=None, fake=False, kwargs=None):  # noqa
         """Make values fabric for column.
@@ -254,7 +250,7 @@ class TypeMixer(BaseTypeMixer):
         stype = self.__factory.cls_to_simple(ftype)
 
         if stype is str:
-            fab = super(TypeMixer, self).make_fabric(
+            fab = super().make_fabric(
                 stype, field_name=field_name, fake=fake, kwargs=kwargs
             )
             return lambda: fab()[: column.type.length]
@@ -262,7 +258,7 @@ class TypeMixer(BaseTypeMixer):
         if ftype is Enum:
             return partial(faker.random_element, column.type.enums)
 
-        return super(TypeMixer, self).make_fabric(
+        return super().make_fabric(
             stype, field_name=field_name, fake=fake, kwargs=kwargs
         )
 
@@ -344,7 +340,7 @@ class Mixer(BaseMixer):
         :param commit: (True) Commit instance to session after creation.
 
         """
-        super(Mixer, self).__init__(**params)
+        super().__init__(**params)
         self.params["session"] = session
         self.params["commit"] = bool(session) and commit
 
